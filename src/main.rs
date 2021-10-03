@@ -10,7 +10,7 @@ fn init_env() {
         panic!("this command is not meant to be run from the console");
     }
 
-    nc::umask(077).unwrap();
+    unsafe { libc::umask(077) };
 
     // Force save our default path
     if let Err(_) = env::var("COCKPIT_TEST_KEEP_PATH") {
@@ -26,15 +26,16 @@ fn init_env() {
     }
     log::debug!("saved environment: {:?}", env_saved);
 
-    if nc::geteuid() == 0 {
+    if unsafe { libc::geteuid() } == 0 {
         // set a minimal environment
         if unsafe { libc::clearenv() } != 0 {
             panic!("couldn't clear environment");
         }
         env::set_var("PATH", DEFAULT_PATH);
 
-        nc::setgid(0).expect("failed to set group ID");
-        nc::setuid(0).expect("failed to set user ID");
+        if unsafe { libc::setgid(0) != 0 || libc::setuid(0) != 0 } {
+            panic!("couldn't switch permissions correctly");
+        }
     }
 
     /*
@@ -68,7 +69,7 @@ fn write_authorize_begin() -> String {
     let now = time::SystemTime::now().duration_since(time::UNIX_EPOCH)
         .expect("failed to get current time");
     format!("\n{{\"command\":\"authorize\",\"cookie\":\"session{}{}\"",
-                         nc::getpid(), now.as_secs())
+                         unsafe { libc::getpid() }, now.as_secs())
 }
 
 fn write_control_str(auth: &mut String, field: &str, value: &str) {
