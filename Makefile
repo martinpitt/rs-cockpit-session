@@ -13,7 +13,7 @@ bots:
 	git clone --depth=1 https://github.com/cockpit-project/bots
 
 start-vm: bots
-	bots/vm-run -s cockpit.socket $${TEST_OS:-fedora-34}
+	bots/vm-run -s cockpit.socket $${TEST_OS:-fedora-35}
 
 test-cockpit: bots
 	$(SSH) -tt curl -u admin:foobar http://localhost:9090/cockpit/login
